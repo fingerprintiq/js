@@ -15,8 +15,9 @@ export async function collectErrors(): Promise<SignalResult<ErrorSignal> | null>
     // 3. spread undefined
     try { [...(undefined as unknown as Iterable<unknown>)]; } catch (e) { messages.push((e as Error).message); }
 
-    // 4. eval syntax error
-    try { eval(")"); } catch (e) { messages.push((e as Error).message); }
+    // 4. eval syntax error — indirect call keeps the bundler happy
+    // (no direct-eval scope capture) while producing the same SyntaxError.
+    try { (0, eval)(")"); } catch (e) { messages.push((e as Error).message); }
 
     // 5. invalid array length
     try { new Array(-1); } catch (e) { messages.push((e as Error).message); }
