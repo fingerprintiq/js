@@ -1,11 +1,12 @@
 import type { FingerprintIQConfig, IdentifyResponse, IdentifyPayload, IdentifyOptions, CacheConfig } from "./types";
 import { collectAllSignals } from "./collect";
 import { primeBehaviorTracking } from "./signals/behaviorTracker";
-import { initWalletListener, getDiscoveredAddresses } from "./signals/wallet-connect";
+import { initWalletListener, getDiscoveredAddresses, onWalletAddress } from "./signals/wallet-connect";
 
 const DEFAULT_ENDPOINT = "https://fingerprintiq.com";
 const DEFAULT_TIMEOUT = 10_000;
 const CH_BOOTSTRAP_KEY = "__fiq_ua_ch_bootstrapped__";
+const WALLET_LINK_DEBOUNCE_MS = 300;
 
 export default class FingerprintIQ {
   private readonly apiKey: string;
@@ -13,6 +14,13 @@ export default class FingerprintIQ {
   private readonly timeout: number;
   private readonly detectWallets: boolean;
   private readonly cache: CacheConfig | false;
+
+  // Tracks the visitorId returned from the most recent identify() call.
+  // Wallet-link auto-sync only runs once we have a visitor to attach to.
+  private lastVisitorId: string | null = null;
+  private walletLinkPending = new Set<string>();
+  private walletLinkTimer: ReturnType<typeof setTimeout> | null = null;
+  private walletAutoLinkUnsub: (() => void) | null = null;
 
   constructor(config: FingerprintIQConfig) {
     if (!config.apiKey) throw new Error("apiKey is required");
@@ -24,6 +32,49 @@ export default class FingerprintIQ {
     primeBehaviorTracking();
     if (this.detectWallets) {
       initWalletListener();
+      this.subscribeToWalletAddresses();
+    }
+  }
+
+  private subscribeToWalletAddresses(): void {
+    if (this.walletAutoLinkUnsub) return;
+    this.walletAutoLinkUnsub = onWalletAddress((address) => {
+      // Only EVM-shaped addresses go to wallet-link for now; the backend
+      // enrichment pipeline is EVM-only.
+      if (!/^0x[a-f0-9]{40}$/.test(address)) return;
+      this.walletLinkPending.add(address);
+      this.scheduleWalletLink();
+    });
+  }
+
+  private scheduleWalletLink(): void {
+    if (!this.lastVisitorId) return; // wait until first identify() returns
+    if (this.walletLinkTimer) clearTimeout(this.walletLinkTimer);
+    this.walletLinkTimer = setTimeout(() => {
+      this.walletLinkTimer = null;
+      void this.flushWalletLink();
+    }, WALLET_LINK_DEBOUNCE_MS);
+  }
+
+  private async flushWalletLink(): Promise<void> {
+    const visitorId = this.lastVisitorId;
+    if (!visitorId) return;
+    const addresses = Array.from(this.walletLinkPending);
+    if (addresses.length === 0) return;
+    this.walletLinkPending.clear();
+
+    try {
+      await fetch(`${this.endpoint}/v1/identify/wallet-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": this.apiKey },
+        body: JSON.stringify({ visitorId, walletAddresses: addresses }),
+        credentials: "include",
+        keepalive: true,
+      });
+    } catch {
+      // Best-effort. If it fails the addresses are still in the local Set
+      // and will ride along on the next identify() call.
+      for (const addr of addresses) this.walletLinkPending.add(addr);
     }
   }
 
@@ -103,6 +154,14 @@ export default class FingerprintIQ {
       }
       const result = (await response.json()) as IdentifyResponse;
       if (this.cache) this.writeCache(result);
+      if (result?.visitorId) {
+        this.lastVisitorId = result.visitorId;
+        // Any addresses that arrived while we were waiting on identify()
+        // get flushed immediately now that we have a visitorId.
+        if (this.walletLinkPending.size > 0) {
+          this.scheduleWalletLink();
+        }
+      }
       return result;
     } finally { clearTimeout(timeoutId); }
   }
@@ -139,4 +198,4 @@ export default class FingerprintIQ {
 }
 
 export type { FingerprintIQConfig, IdentifyOptions, CacheConfig, IdentifyResponse, Verdicts, IpLocation, SybilRisk, ClientSignals, CanvasSignal, WebGLSignal, WebGPUSignal, AudioSignal, FontSignal, WebRTCSignal, WasmTimingSignal, NavigatorSignal, MediaSignal, ScreenSignal, IntegritySignal, WalletSignal, StorageSignal, MathSignal, DOMRectSignal, HeadlessSignal, SpeechSignal, IntlSignal, TimezoneSignal, CssStyleSignal, ErrorSignal, WorkerScopeSignal, ResistanceSignal, SvgSignal, WindowFeaturesSignal, HtmlElementSignal, CodecSignal, StatusSignal, PlatformFeaturesSignal, UAClientHintsSignal, UAClientHintsBrand, CapabilityVectorSignal, GeometryVectorSignal, RuntimeVectorSignal, SensorCapabilitiesSignal, BehavioralRiskSignal } from "./types";
-export { requestWalletConnection, getDiscoveredAddresses } from "./signals/wallet-connect";
+export { requestWalletConnection, getDiscoveredAddresses, onWalletAddress } from "./signals/wallet-connect";

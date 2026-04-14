@@ -4,6 +4,14 @@ const discoveredAddresses = new Set<string>();
 const connections: WalletConnection[] = [];
 let listening = false;
 
+type AddressListener = (address: string, connection: WalletConnection) => void;
+const addressListeners = new Set<AddressListener>();
+
+export function onWalletAddress(listener: AddressListener): () => void {
+  addressListeners.add(listener);
+  return () => addressListeners.delete(listener);
+}
+
 function normalizeAddress(addr: string): string {
   return addr.toLowerCase();
 }
@@ -12,7 +20,15 @@ function addConnection(address: string, chain: "evm" | "solana", provider: strin
   const norm = normalizeAddress(address);
   if (discoveredAddresses.has(norm)) return;
   discoveredAddresses.add(norm);
-  connections.push({ address: norm, chain, provider, method });
+  const connection: WalletConnection = { address: norm, chain, provider, method };
+  connections.push(connection);
+  for (const listener of addressListeners) {
+    try {
+      listener(norm, connection);
+    } catch {
+      /* swallow listener errors so one bad subscriber can't break detection */
+    }
+  }
 }
 
 /**
