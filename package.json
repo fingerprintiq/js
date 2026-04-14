@@ -1,0 +1,87 @@
+{
+  "name": "@fingerprintiq/js",
+  "version": "0.3.0",
+  "description": "Browser fingerprinting SDK — identify visitors with 99%+ accuracy using 41 client signals fused with server-side TLS/JA4 analysis",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "require": "./dist/react/index.cjs"
+    },
+    "./vue": {
+      "types": "./dist/vue/index.d.ts",
+      "import": "./dist/vue/index.js",
+      "require": "./dist/vue/index.cjs"
+    },
+    "./next": {
+      "types": "./dist/next/index.d.ts",
+      "import": "./dist/next/index.js",
+      "require": "./dist/next/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "fingerprint",
+    "browser-fingerprint",
+    "device-id",
+    "bot-detection",
+    "fraud-prevention",
+    "visitor-identification",
+    "web3",
+    "sybil-detection",
+    "react",
+    "vue",
+    "nextjs"
+  ],
+  "author": "FingerprintIQ <hello@fingerprintiq.com> (https://fingerprintiq.com)",
+  "homepage": "https://fingerprintiq.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fingerprintiq/js.git"
+  },
+  "bugs": "https://github.com/fingerprintiq/js/issues",
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "vue": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true },
+    "vue": { "optional": true }
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^26.1.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0",
+    "vue": "^3.5.32"
+  }
+}
