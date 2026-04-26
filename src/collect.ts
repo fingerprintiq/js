@@ -19,6 +19,7 @@ import { collectSpeech } from "./signals/speech";
 import { collectIntl } from "./signals/intl";
 import { collectTimezone } from "./signals/timezone";
 import { collectCssStyle } from "./signals/cssStyle";
+import { collectCssFeatures } from "./signals/cssFeatures";
 import { collectErrors } from "./signals/errors";
 import { collectWorkerScope } from "./signals/workerScope";
 import { collectResistance } from "./signals/resistance";
@@ -38,6 +39,7 @@ import { collectIncognito } from "./signals/incognito";
 import { collectDevTools } from "./signals/devTools";
 import { collectVirtualization } from "./signals/virtualization";
 import { collectRooted } from "./signals/rooted";
+import { collectFrameDepth } from "./signals/frameDepth";
 import { primeBehaviorTracking } from "./signals/behaviorTracker";
 
 interface CollectOptions {
@@ -51,11 +53,11 @@ export async function collectAllSignals(options: CollectOptions): Promise<Client
     canvas, webgl, webgpu, audio, fonts, webrtc, wasmTiming,
     navigator, media, screen, integrity, wallets, storage,
     math, domRect, headless,
-    speech, intl, timezone, cssStyle, error, workerScope, resistance,
+    speech, intl, timezone, cssStyle, cssFeatures, error, workerScope, resistance,
     svg, windowFeatures, htmlElement, codec, status, platformFeatures,
     uaClientHints, capabilityVector, geometryVector, runtimeVector,
     sensorCapabilities, behavioralRisk,
-    incognito, devTools, virtualization, rooted,
+    incognito, devTools, virtualization, rooted, frameDepth,
   ] = await Promise.all([
     collectCanvas(), collectWebGL(), collectWebGPU(), collectAudio(),
     collectFonts(), collectWebRTC(), collectWasmTiming(), collectNavigator(),
@@ -63,14 +65,14 @@ export async function collectAllSignals(options: CollectOptions): Promise<Client
     options.detectWallets ? collectWallets() : Promise.resolve(null),
     collectStorage(),
     collectMath(), collectDOMRect(), collectHeadless(),
-    collectSpeech(), collectIntl(), collectTimezone(), collectCssStyle(),
+    collectSpeech(), collectIntl(), collectTimezone(), collectCssStyle(), collectCssFeatures(),
     collectErrors(), collectWorkerScope(), collectResistance(),
     collectSvg(), collectWindowFeatures(), collectHtmlElement(),
     collectCodecs(), collectStatus(), collectPlatformFeatures(),
     collectUaClientHints(),
     collectCapabilityVector(), collectGeometryVector(), collectRuntimeVector(),
     collectSensorCapabilities(), collectBehavioralRisk(),
-    collectIncognito(), collectDevTools(), collectVirtualization(), collectRooted(),
+    collectIncognito(), collectDevTools(), collectVirtualization(), collectRooted(), collectFrameDepth(),
   ]);
 
   if (integrity?.value) {
@@ -81,10 +83,10 @@ export async function collectAllSignals(options: CollectOptions): Promise<Client
     canvas, webgl, webgpu, audio, fonts, webrtc, wasmTiming,
     navigator, media, screen, integrity, wallets, storage,
     math, domRect, headless,
-    speech, intl, timezone, cssStyle, error, workerScope, resistance,
+    speech, intl, timezone, cssStyle, cssFeatures, error, workerScope, resistance,
     svg, windowFeatures, htmlElement, codec, status, platformFeatures,
     uaClientHints, capabilityVector, geometryVector, runtimeVector,
     sensorCapabilities, behavioralRisk,
-    incognito, devTools, virtualization, rooted,
+    incognito, devTools, virtualization, rooted, frameDepth,
   };
 }

@@ -7,11 +7,13 @@ vi.mock("../collect", () => ({
     wasmTiming: null, navigator: null, media: null, screen: null,
     integrity: null, wallets: null, storage: null, math: null, domRect: null,
     headless: null, speech: null, intl: null, timezone: null, cssStyle: null,
+    cssFeatures: null,
     error: null, workerScope: null, resistance: null, svg: null,
     windowFeatures: null, htmlElement: null, codec: null, status: null,
     platformFeatures: null, uaClientHints: null, capabilityVector: null,
     geometryVector: null, runtimeVector: null, sensorCapabilities: null,
     behavioralRisk: null,
+    frameDepth: null,
   }),
 }));
 

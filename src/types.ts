@@ -182,6 +182,12 @@ export interface CssStyleSignal {
   hash: string;
 }
 
+export interface CssFeatureSignal {
+  features: Record<string, boolean>;
+  supportedCount: number;
+  hash: string;
+}
+
 export interface ErrorSignal {
   messages: string[];
   hash: string;
@@ -382,6 +388,14 @@ export interface RootedSignal {
   indicators: string[];
 }
 
+export interface FrameDepthSignal {
+  isFramed: boolean;
+  depth: number;
+  topAccessible: boolean;
+  crossOriginBoundary: boolean;
+  hash: string;
+}
+
 export interface ClientSignals {
   canvas: SignalResult<CanvasSignal> | null;
   webgl: SignalResult<WebGLSignal> | null;
@@ -403,6 +417,7 @@ export interface ClientSignals {
   intl: SignalResult<IntlSignal> | null;
   timezone: SignalResult<TimezoneSignal> | null;
   cssStyle: SignalResult<CssStyleSignal> | null;
+  cssFeatures: SignalResult<CssFeatureSignal> | null;
   error: SignalResult<ErrorSignal> | null;
   workerScope: SignalResult<WorkerScopeSignal> | null;
   resistance: SignalResult<ResistanceSignal> | null;
@@ -422,6 +437,7 @@ export interface ClientSignals {
   devTools: SignalResult<DevToolsSignal> | null;
   virtualization: SignalResult<VirtualizationSignal> | null;
   rooted: SignalResult<RootedSignal> | null;
+  frameDepth: SignalResult<FrameDepthSignal> | null;
 }
 
 export interface Verdicts {

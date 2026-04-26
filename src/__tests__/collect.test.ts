@@ -20,6 +20,7 @@ vi.mock("../signals/speech", () => ({ collectSpeech: vi.fn().mockResolvedValue(n
 vi.mock("../signals/intl", () => ({ collectIntl: vi.fn().mockResolvedValue(null) }));
 vi.mock("../signals/timezone", () => ({ collectTimezone: vi.fn().mockResolvedValue(null) }));
 vi.mock("../signals/cssStyle", () => ({ collectCssStyle: vi.fn().mockResolvedValue(null) }));
+vi.mock("../signals/cssFeatures", () => ({ collectCssFeatures: vi.fn().mockResolvedValue(null) }));
 vi.mock("../signals/errors", () => ({ collectErrors: vi.fn().mockResolvedValue(null) }));
 vi.mock("../signals/workerScope", () => ({ collectWorkerScope: vi.fn().mockResolvedValue(null) }));
 vi.mock("../signals/resistance", () => ({ collectResistance: vi.fn().mockResolvedValue(null) }));
@@ -39,6 +40,7 @@ vi.mock("../signals/incognito", () => ({ collectIncognito: vi.fn().mockResolvedV
 vi.mock("../signals/devTools", () => ({ collectDevTools: vi.fn().mockResolvedValue(null) }));
 vi.mock("../signals/virtualization", () => ({ collectVirtualization: vi.fn().mockResolvedValue(null) }));
 vi.mock("../signals/rooted", () => ({ collectRooted: vi.fn().mockResolvedValue(null) }));
+vi.mock("../signals/frameDepth", () => ({ collectFrameDepth: vi.fn().mockResolvedValue(null) }));
 vi.mock("../signals/behaviorTracker", () => ({ primeBehaviorTracking: vi.fn() }));
 
 import { collectAllSignals } from "../collect";
@@ -46,25 +48,25 @@ import { collectIntegrity } from "../signals/integrity";
 import { collectWorkerScope } from "../signals/workerScope";
 
 describe("collectAllSignals", () => {
-  it("returns an object with all 39 signal keys", async () => {
+  it("returns an object with all 41 signal keys", async () => {
     const result = await collectAllSignals({ detectWallets: true });
 
     const expectedKeys = [
       "canvas", "webgl", "webgpu", "audio", "fonts", "webrtc", "wasmTiming",
       "navigator", "media", "screen", "integrity", "wallets", "storage",
       "math", "domRect", "headless",
-      "speech", "intl", "timezone", "cssStyle", "error", "workerScope", "resistance",
+      "speech", "intl", "timezone", "cssStyle", "cssFeatures", "error", "workerScope", "resistance",
       "svg", "windowFeatures", "htmlElement", "codec", "status", "platformFeatures",
       "uaClientHints", "capabilityVector", "geometryVector", "runtimeVector",
       "sensorCapabilities", "behavioralRisk",
-      "incognito", "devTools", "virtualization", "rooted",
+      "incognito", "devTools", "virtualization", "rooted", "frameDepth",
     ];
 
     for (const key of expectedKeys) {
       expect(key in result, `Missing key: ${key}`).toBe(true);
     }
 
-    expect(Object.keys(result).length).toBe(39);
+    expect(Object.keys(result).length).toBe(41);
   });
 
   it("all signals return null when mocked", async () => {
