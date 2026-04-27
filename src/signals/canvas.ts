@@ -34,17 +34,15 @@ function renderScene(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement): 
 }
 
 /**
- * Detect if the browser adds noise to canvas output.
- * Safari 17+ and Firefox 120+ inject noise that produces garbage data.
- * Skip canvas collection for these browsers to avoid unstable fingerprints.
+ * Browsers that intentionally farble canvas output (Safari 17+, Firefox 120+ RFP).
+ * We still collect — the hash is informative when paired with isFarbled, and detecting
+ * spoofed-non-farbling on these UAs is a high-value bot signal.
  */
-function shouldSkipCanvas(): boolean {
+function browserFarblesCanvas(): boolean {
   try {
     const ua = navigator.userAgent;
-    // Safari 17+ adds canvas noise
     const safariMatch = ua.match(/Version\/(\d+)\.\d+.*Safari/);
     if (safariMatch && parseInt(safariMatch[1]!, 10) >= 17) return true;
-    // Firefox 120+ with fingerprinting protection
     const firefoxMatch = ua.match(/Firefox\/(\d+)/);
     if (firefoxMatch && parseInt(firefoxMatch[1]!, 10) >= 120) return true;
   } catch { /* ignore */ }
@@ -54,22 +52,22 @@ function shouldSkipCanvas(): boolean {
 export async function collectCanvas(): Promise<SignalResult<CanvasSignal> | null> {
   const start = performance.now();
   try {
-    if (shouldSkipCanvas()) return null;
-
     const canvas = document.createElement("canvas");
     canvas.width = 300;
     canvas.height = 150;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
 
+    // Two renders are enough to detect noise; saves ~33% canvas CPU.
     const renders: string[] = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       renderScene(ctx, canvas);
       renders.push(canvas.toDataURL("image/png"));
     }
 
-    const isFarbled = renders.some((r) => r !== renders[0]);
+    const renderFarbled = renders[0] !== renders[1];
+    const isFarbled = renderFarbled || browserFarblesCanvas();
     const hash = await sha256(renders[0]!);
 
     return {
