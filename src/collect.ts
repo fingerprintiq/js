@@ -46,6 +46,26 @@ interface CollectOptions {
   detectWallets: boolean;
 }
 
+const DEFAULT_SIGNAL_TIMEOUT_MS = 1500;
+
+async function collectSignal<T>(
+  collector: () => Promise<T>,
+  timeoutMs = DEFAULT_SIGNAL_TIMEOUT_MS,
+): Promise<T | null> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<null>((resolve) => {
+    timeoutId = setTimeout(() => resolve(null), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([collector(), timeout]);
+  } catch {
+    return null;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 export async function collectAllSignals(options: CollectOptions): Promise<ClientSignals> {
   primeBehaviorTracking();
 
@@ -59,20 +79,20 @@ export async function collectAllSignals(options: CollectOptions): Promise<Client
     sensorCapabilities, behavioralRisk,
     incognito, devTools, virtualization, rooted, frameDepth,
   ] = await Promise.all([
-    collectCanvas(), collectWebGL(), collectWebGPU(), collectAudio(),
-    collectFonts(), collectWebRTC(), collectWasmTiming(), collectNavigator(),
-    collectMedia(), collectScreen(), collectIntegrity(),
-    options.detectWallets ? collectWallets() : Promise.resolve(null),
-    collectStorage(),
-    collectMath(), collectDOMRect(), collectHeadless(),
-    collectSpeech(), collectIntl(), collectTimezone(), collectCssStyle(), collectCssFeatures(),
-    collectErrors(), collectWorkerScope(), collectResistance(),
-    collectSvg(), collectWindowFeatures(), collectHtmlElement(),
-    collectCodecs(), collectStatus(), collectPlatformFeatures(),
-    collectUaClientHints(),
-    collectCapabilityVector(), collectGeometryVector(), collectRuntimeVector(),
-    collectSensorCapabilities(), collectBehavioralRisk(),
-    collectIncognito(), collectDevTools(), collectVirtualization(), collectRooted(), collectFrameDepth(),
+    collectSignal(collectCanvas), collectSignal(collectWebGL), collectSignal(collectWebGPU), collectSignal(collectAudio),
+    collectSignal(collectFonts), collectSignal(collectWebRTC), collectSignal(collectWasmTiming), collectSignal(collectNavigator),
+    collectSignal(collectMedia), collectSignal(collectScreen), collectSignal(collectIntegrity),
+    options.detectWallets ? collectSignal(collectWallets) : Promise.resolve(null),
+    collectSignal(collectStorage),
+    collectSignal(collectMath), collectSignal(collectDOMRect), collectSignal(collectHeadless),
+    collectSignal(collectSpeech), collectSignal(collectIntl), collectSignal(collectTimezone), collectSignal(collectCssStyle), collectSignal(collectCssFeatures),
+    collectSignal(collectErrors), collectSignal(collectWorkerScope), collectSignal(collectResistance),
+    collectSignal(collectSvg), collectSignal(collectWindowFeatures), collectSignal(collectHtmlElement),
+    collectSignal(collectCodecs), collectSignal(collectStatus), collectSignal(collectPlatformFeatures),
+    collectSignal(collectUaClientHints),
+    collectSignal(collectCapabilityVector), collectSignal(collectGeometryVector), collectSignal(collectRuntimeVector),
+    collectSignal(collectSensorCapabilities), collectSignal(collectBehavioralRisk),
+    collectSignal(collectIncognito), collectSignal(collectDevTools), collectSignal(collectVirtualization), collectSignal(collectRooted), collectSignal(collectFrameDepth),
   ]);
 
   if (integrity?.value) {

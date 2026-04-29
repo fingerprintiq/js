@@ -42,7 +42,7 @@ export async function collectWorkerScope(): Promise<SignalResult<WorkerScopeSign
         try { worker.terminate(); } catch { /* ignore */ }
         URL.revokeObjectURL(url);
         resolve(null);
-      }, 5000);
+      }, 1200);
 
       try {
         worker = new Worker(url);

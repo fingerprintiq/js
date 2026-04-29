@@ -10,7 +10,7 @@ export async function collectSpeech(): Promise<SignalResult<SpeechSignal> | null
 
     if (voices.length === 0) {
       voices = await new Promise<SpeechSynthesisVoice[]>((resolve) => {
-        const timeout = setTimeout(() => resolve([]), 2000);
+        const timeout = setTimeout(() => resolve([]), 800);
         speechSynthesis.onvoiceschanged = () => {
           clearTimeout(timeout);
           resolve(speechSynthesis.getVoices());

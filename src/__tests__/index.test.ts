@@ -19,6 +19,16 @@ vi.mock("../collect", () => ({
 
 import FingerprintIQ from "../index";
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
 describe("FingerprintIQ", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -60,21 +70,38 @@ describe("FingerprintIQ", () => {
     expect(url).toBe("https://custom.example.com/v1/identify");
   });
 
-  it("bootstraps UA client hints once when userAgentData is available", async () => {
+  it("bootstraps UA client hints once in the background", async () => {
     Object.defineProperty(navigator, "userAgentData", {
       configurable: true,
       value: { brands: [{ brand: "Chromium", version: "136" }], mobile: false, platform: "macOS" },
     });
 
-    const fiq = new FingerprintIQ({ apiKey: "fiq_live_test" });
-    await fiq.identify();
+    const bootstrap = deferred<Response>();
+    vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/v1/bootstrap")) return bootstrap.promise;
+      return Promise.resolve({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          visitorId: "iq_test123", confidence: 0.95, botProbability: 0.05,
+          signals: {}, timestamp: Date.now(),
+        }),
+      } as unknown as Response);
+    }));
 
+    const fiq = new FingerprintIQ({ apiKey: "fiq_live_test" });
+    const result = await fiq.identify();
+
+    expect(result.visitorId).toBe("iq_test123");
     expect(fetch).toHaveBeenCalledTimes(2);
     const firstCall = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
     const secondCall = (fetch as ReturnType<typeof vi.fn>).mock.calls[1] as [string, RequestInit];
     expect(firstCall[0]).toContain("/v1/bootstrap");
     expect(firstCall[1].method).toBe("GET");
     expect(secondCall[0]).toContain("/v1/identify");
+
+    bootstrap.resolve(new Response(null, { status: 204 }));
+    await vi.waitFor(() => expect(sessionStorage.getItem("__fiq_ua_ch_bootstrapped__")).toBe("1"));
 
     await fiq.identify();
     expect(fetch).toHaveBeenCalledTimes(3);

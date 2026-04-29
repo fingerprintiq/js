@@ -4,7 +4,7 @@ import { primeBehaviorTracking } from "./signals/behaviorTracker";
 import { initWalletListener, getDiscoveredAddresses, onWalletAddress } from "./signals/wallet-connect";
 
 const DEFAULT_ENDPOINT = "https://fingerprintiq.com";
-const DEFAULT_TIMEOUT = 10_000;
+const DEFAULT_TIMEOUT = 5_000;
 const CH_BOOTSTRAP_KEY = "__fiq_ua_ch_bootstrapped__";
 const WALLET_LINK_DEBOUNCE_MS = 300;
 
@@ -21,6 +21,8 @@ export default class FingerprintIQ {
   private walletLinkPending = new Set<string>();
   private walletLinkTimer: ReturnType<typeof setTimeout> | null = null;
   private walletAutoLinkUnsub: (() => void) | null = null;
+  private clientHintsBootstrapped = false;
+  private clientHintsBootstrapPromise: Promise<void> | null = null;
 
   constructor(config: FingerprintIQConfig) {
     if (!config.apiKey) throw new Error("apiKey is required");
@@ -80,6 +82,8 @@ export default class FingerprintIQ {
 
   private async ensureClientHintsBootstrapped(): Promise<void> {
     if (typeof navigator === "undefined") return;
+    if (this.clientHintsBootstrapped) return;
+    if (this.clientHintsBootstrapPromise) return this.clientHintsBootstrapPromise;
 
     const nav = navigator as Navigator & { userAgentData?: unknown };
     if (!nav.userAgentData) return;
@@ -89,37 +93,45 @@ export default class FingerprintIQ {
         typeof sessionStorage !== "undefined" &&
         sessionStorage.getItem(CH_BOOTSTRAP_KEY) === "1"
       ) {
+        this.clientHintsBootstrapped = true;
         return;
       }
     } catch {
       // Ignore storage failures and continue.
     }
 
-    try {
-      await fetch(`${this.endpoint}/v1/bootstrap`, {
-        method: "GET",
-        credentials: "include",
-        keepalive: true,
-      });
+    this.clientHintsBootstrapPromise = (async () => {
       try {
-        if (typeof sessionStorage !== "undefined") {
-          sessionStorage.setItem(CH_BOOTSTRAP_KEY, "1");
+        await fetch(`${this.endpoint}/v1/bootstrap`, {
+          method: "GET",
+          credentials: "include",
+          keepalive: true,
+        });
+        this.clientHintsBootstrapped = true;
+        try {
+          if (typeof sessionStorage !== "undefined") {
+            sessionStorage.setItem(CH_BOOTSTRAP_KEY, "1");
+          }
+        } catch {
+          // Ignore storage failures; the optimization is best-effort.
         }
       } catch {
-        // Ignore storage failures; the optimization is best-effort.
+        // Best-effort bootstrap only.
+      } finally {
+        this.clientHintsBootstrapPromise = null;
       }
-    } catch {
-      // Best-effort bootstrap only.
-    }
+    })();
+
+    return this.clientHintsBootstrapPromise;
   }
 
   async identify(options?: IdentifyOptions): Promise<IdentifyResponse> {
-    await this.ensureClientHintsBootstrapped();
-
     if (this.cache) {
       const cached = this.readCache();
       if (cached) return { ...cached, cacheHit: true };
     }
+
+    void this.ensureClientHintsBootstrapped();
 
     const signals = await collectAllSignals({ detectWallets: this.detectWallets });
     const payload: IdentifyPayload = {

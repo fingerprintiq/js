@@ -106,10 +106,12 @@ Server-side signals (JA4 TLS, HTTP/2 settings, ASN classification, RTT coherence
 const fiq = new FingerprintIQ({
   apiKey: 'fiq_live_...',     // Required
   endpoint: 'https://...',    // Custom endpoint (default: fingerprintiq.com)
-  timeout: 10000,             // Timeout in ms (default: 10000)
-  detectWallets: true,        // Detect crypto wallets (default: false)
+  timeout: 5000,              // API timeout in ms (default: 5000)
+  detectWallets: true,        // Detect crypto wallets (default: true)
 });
 ```
+
+Signal collectors are individually time-boxed so one slow browser API cannot hold up the full `identify()` call. User-Agent Client Hints bootstrap runs in the background and is reused on later calls.
 
 ## Response
 

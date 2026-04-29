@@ -18,7 +18,7 @@ export async function collectWebRTC(): Promise<SignalResult<WebRTCSignal> | null
     const candidateTypes: Set<string> = new Set();
 
     const gatheringComplete = new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => resolve(), 3000);
+      const timeout = setTimeout(() => resolve(), 1200);
       pc.onicecandidate = (event) => {
         if (!event.candidate) { clearTimeout(timeout); resolve(); return; }
         const candidateStr = event.candidate.candidate;
