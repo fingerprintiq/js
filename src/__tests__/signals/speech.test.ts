@@ -4,7 +4,6 @@ import { collectSpeech } from "../../signals/speech";
 describe("collectSpeech", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    // Remove speechSynthesis if previously defined
     delete (globalThis as Record<string, unknown>).speechSynthesis;
   });
 

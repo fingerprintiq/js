@@ -1,6 +1,27 @@
 import type { SignalResult, PlatformFeaturesSignal } from "../types";
 import { sha256 } from "../hash";
 
+type PlatformFeatureGlobal = typeof globalThis & {
+  BarcodeDetector?: object;
+  ContentIndex?: object;
+  EyeDropper?: object;
+  FileSystemWritableFileStream?: object;
+  PointerEvent?: object;
+  SharedWorker?: object;
+  TouchEvent?: object;
+  showDirectoryPicker?: object;
+  showOpenFilePicker?: object;
+};
+
+type NavigatorPlatformFeatures = Navigator & {
+  bluetooth?: object;
+  contacts?: object;
+  hid?: object;
+  serial?: object;
+  usb?: object;
+  wakeLock?: object;
+};
+
 function estimatePlatform(features: Record<string, boolean>): string {
   if (features["BarcodeDetector"] && features["ContactsManager"]) return "Android";
   if (features["TouchEvent"] && !features["SharedWorker"]) return "Mobile";
@@ -12,26 +33,29 @@ export async function collectPlatformFeatures(): Promise<SignalResult<PlatformFe
   const start = performance.now();
   try {
     const features: Record<string, boolean> = {};
+    const globals = globalThis as PlatformFeatureGlobal;
+    const nav = navigator as NavigatorPlatformFeatures;
 
-    features["BarcodeDetector"] = typeof (globalThis as Record<string, unknown>)["BarcodeDetector"] !== "undefined";
-    features["ContactsManager"] = typeof (navigator as unknown as Record<string, unknown>)["contacts"] !== "undefined";
+    features["BarcodeDetector"] = typeof globals.BarcodeDetector !== "undefined";
+    features["ContactsManager"] = typeof nav.contacts !== "undefined";
     features["ContentIndex"] = (() => {
       try {
-        return typeof (self as unknown as Record<string, unknown>)["ContentIndex"] !== "undefined";
+        return typeof self !== "undefined"
+          && typeof (self as PlatformFeatureGlobal).ContentIndex !== "undefined";
       } catch { return false; }
     })();
-    features["EyeDropper"] = typeof (globalThis as Record<string, unknown>)["EyeDropper"] !== "undefined";
-    features["FileSystemWritableFileStream"] = typeof (globalThis as Record<string, unknown>)["FileSystemWritableFileStream"] !== "undefined";
-    features["HID"] = typeof (navigator as unknown as Record<string, unknown>)["hid"] !== "undefined";
-    features["Serial"] = typeof (navigator as unknown as Record<string, unknown>)["serial"] !== "undefined";
-    features["USB"] = typeof (navigator as unknown as Record<string, unknown>)["usb"] !== "undefined";
-    features["SharedWorker"] = typeof (globalThis as Record<string, unknown>)["SharedWorker"] !== "undefined";
-    features["PointerEvent"] = typeof (globalThis as Record<string, unknown>)["PointerEvent"] !== "undefined";
-    features["TouchEvent"] = typeof (globalThis as Record<string, unknown>)["TouchEvent"] !== "undefined";
-    features["showDirectoryPicker"] = typeof (globalThis as Record<string, unknown>)["showDirectoryPicker"] !== "undefined";
-    features["showOpenFilePicker"] = typeof (globalThis as Record<string, unknown>)["showOpenFilePicker"] !== "undefined";
-    features["Bluetooth"] = typeof (navigator as unknown as Record<string, unknown>)["bluetooth"] !== "undefined";
-    features["WakeLock"] = typeof (navigator as unknown as Record<string, unknown>)["wakeLock"] !== "undefined";
+    features["EyeDropper"] = typeof globals.EyeDropper !== "undefined";
+    features["FileSystemWritableFileStream"] = typeof globals.FileSystemWritableFileStream !== "undefined";
+    features["HID"] = typeof nav.hid !== "undefined";
+    features["Serial"] = typeof nav.serial !== "undefined";
+    features["USB"] = typeof nav.usb !== "undefined";
+    features["SharedWorker"] = typeof globals.SharedWorker !== "undefined";
+    features["PointerEvent"] = typeof globals.PointerEvent !== "undefined";
+    features["TouchEvent"] = typeof globals.TouchEvent !== "undefined";
+    features["showDirectoryPicker"] = typeof globals.showDirectoryPicker !== "undefined";
+    features["showOpenFilePicker"] = typeof globals.showOpenFilePicker !== "undefined";
+    features["Bluetooth"] = typeof nav.bluetooth !== "undefined";
+    features["WakeLock"] = typeof nav.wakeLock !== "undefined";
 
     const estimatedPlatform = estimatePlatform(features);
 

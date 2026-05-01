@@ -1,9 +1,4 @@
-import type { SignalResult } from "../types";
-
-export interface MathSignal {
-  values: number[];
-  hash: string;
-}
+import type { MathSignal, SignalResult } from "../types";
 
 const MATH_TESTS: Array<() => number> = [
   () => Math.acos(0.123456789),

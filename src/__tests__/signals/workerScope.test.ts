@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { collectWorkerScope } from "../../signals/workerScope";
 
-// jsdom does not implement URL.createObjectURL — define stubs
+// jsdom lacks the blob URL APIs used by the worker probe.
 if (!URL.createObjectURL) {
   URL.createObjectURL = () => "blob:mock";
 }

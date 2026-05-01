@@ -1,12 +1,23 @@
 import type { SignalResult, AudioSignal } from "../types";
 import { sha256 } from "../hash";
 
-function getOfflineAudioContext(): (new (channels: number, length: number, sampleRate: number) => OfflineAudioContext) | null {
+type OfflineAudioContextConstructor = new (
+  channels: number,
+  length: number,
+  sampleRate: number,
+) => OfflineAudioContext;
+
+type AudioGlobal = typeof globalThis & {
+  webkitOfflineAudioContext?: OfflineAudioContextConstructor;
+};
+
+type ClosableOfflineAudioContext = OfflineAudioContext & {
+  close?: () => Promise<void>;
+};
+
+function getOfflineAudioContext(): OfflineAudioContextConstructor | null {
   if (typeof OfflineAudioContext !== "undefined") return OfflineAudioContext;
-  if (typeof (globalThis as Record<string, unknown>).webkitOfflineAudioContext !== "undefined") {
-    return (globalThis as Record<string, unknown>).webkitOfflineAudioContext as typeof OfflineAudioContext;
-  }
-  return null;
+  return (globalThis as AudioGlobal).webkitOfflineAudioContext ?? null;
 }
 
 export async function collectAudio(): Promise<SignalResult<AudioSignal> | null> {
@@ -44,7 +55,10 @@ export async function collectAudio(): Promise<SignalResult<AudioSignal> | null> 
     oscillator.stop();
     oscillator.disconnect();
     compressor.disconnect();
-    try { await (ctx as unknown as { close: () => Promise<void> }).close(); } catch { /* some browsers don't support closing offline context */ }
+    try {
+      const close = (ctx as ClosableOfflineAudioContext).close;
+      if (typeof close === "function") await close.call(ctx);
+    } catch { /* some browsers don't support closing offline context */ }
 
     return { value: { hash, sampleRate, maxChannelCount, isSuspended }, duration: performance.now() - start };
   } catch { return null; }

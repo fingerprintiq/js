@@ -41,9 +41,6 @@ describe("collectWindowFeatures", () => {
 
     const result = await collectWindowFeatures();
     expect(result).not.toBeNull();
-    // The litter list may be capped at 50 — verify the logic ran at least
-    // (litter keys are sorted, so zzz_ prefixed keys appear last and may be cut)
-    // Just verify the signal ran successfully and has up to 50 litter keys
     expect(result!.value.litterKeys.length).toBeLessThanOrEqual(50);
 
     delete (globalThis as Record<string, unknown>)["zzz_extensionInjectedThing"];

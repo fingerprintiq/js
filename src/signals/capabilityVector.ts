@@ -1,6 +1,23 @@
 import type { CapabilityVectorSignal, SignalResult } from "../types";
 import { sha256 } from "../hash";
 
+type NavigatorCapabilityFields = Navigator & {
+  globalPrivacyControl?: boolean;
+  keyboard?: {
+    getLayoutMap?: () => Promise<Map<string, string>>;
+  };
+  pdfViewerEnabled?: boolean;
+  userAgentData?: {
+    getHighEntropyValues?: (hints: string[]) => Promise<object>;
+  };
+};
+
+type CapabilityGlobal = typeof globalThis & {
+  SpeechRecognition?: object;
+  speechSynthesis?: SpeechSynthesis;
+  webkitSpeechRecognition?: object;
+};
+
 function normalizePluginName(name: string): string {
   return name.trim().toLowerCase();
 }
@@ -11,9 +28,8 @@ export async function collectCapabilityVector(): Promise<
   const start = performance.now();
 
   try {
-    const nav = navigator as Navigator & Record<string, unknown> & {
-      userAgentData?: { getHighEntropyValues?: unknown };
-    };
+    const nav = navigator as NavigatorCapabilityFields;
+    const globals = globalThis as CapabilityGlobal;
 
     const plugins = Array.from(nav.plugins ?? []);
     const normalizedPluginNames = plugins
@@ -25,17 +41,15 @@ export async function collectCapabilityVector(): Promise<
 
     const pdfViewerEnabled =
       "pdfViewerEnabled" in nav
-        ? Boolean((nav as Record<string, unknown>).pdfViewerEnabled)
+        ? Boolean(nav.pdfViewerEnabled)
         : null;
     const globalPrivacyControl =
       "globalPrivacyControl" in nav
-        ? Boolean((nav as Record<string, unknown>).globalPrivacyControl)
+        ? Boolean(nav.globalPrivacyControl)
         : null;
     const hasSpeechRecognition =
-      typeof (globalThis as Record<string, unknown>).SpeechRecognition !==
-        "undefined" ||
-      typeof (globalThis as Record<string, unknown>).webkitSpeechRecognition !==
-        "undefined";
+      typeof globals.SpeechRecognition !== "undefined" ||
+      typeof globals.webkitSpeechRecognition !== "undefined";
 
     const value: CapabilityVectorSignal = {
       pdfViewerEnabled,
@@ -45,15 +59,11 @@ export async function collectCapabilityVector(): Promise<
       hasWebGPU: "gpu" in nav,
       hasVirtualKeyboard: "virtualKeyboard" in nav,
       hasSpeechSynthesis:
-        typeof (globalThis as Record<string, unknown>).speechSynthesis !==
-        "undefined",
+        typeof globals.speechSynthesis !== "undefined",
       hasSpeechRecognition,
       hasMediaCapabilities: "mediaCapabilities" in nav,
       hasKeyboardLayoutApi:
-        typeof (nav as Record<string, unknown>).keyboard === "object" &&
-        typeof (
-          (nav as Record<string, unknown>).keyboard as Record<string, unknown>
-        )?.getLayoutMap === "function",
+        typeof nav.keyboard?.getLayoutMap === "function",
       hasBluetooth: "bluetooth" in nav,
       hasUsb: "usb" in nav,
       hasHid: "hid" in nav,

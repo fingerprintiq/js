@@ -1,10 +1,4 @@
-import type { SignalResult } from "../types";
-
-export interface DOMRectSignal {
-  hash: string;
-  emojiHash: string;
-  rectCount: number;
-}
+import type { DOMRectSignal, SignalResult } from "../types";
 
 const TEST_ELEMENTS = [
   { tag: "div", text: "FingerprintIQ", style: "font-size:16px;font-family:Arial;padding:10px;display:inline-block;" },

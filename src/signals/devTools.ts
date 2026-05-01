@@ -1,9 +1,4 @@
-import type { SignalResult } from "../types";
-
-export interface DevToolsSignal {
-  isOpen: boolean;
-  indicators: string[];
-}
+import type { DevToolsSignal, SignalResult } from "../types";
 
 export async function collectDevTools(): Promise<SignalResult<DevToolsSignal>> {
   const start = performance.now();

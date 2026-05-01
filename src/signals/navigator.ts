@@ -1,17 +1,36 @@
 import type { SignalResult, NavigatorSignal } from "../types";
 
+interface NavigatorKeyboardLike {
+  getLayoutMap?: () => Promise<Map<string, string>>;
+}
+
+interface NavigatorConnectionLike {
+  effectiveType?: string;
+}
+
+interface NavigatorBluetoothLike {
+  getAvailability?: () => Promise<boolean>;
+}
+
+type NavigatorWithExperimentalFields = Navigator & {
+  bluetooth?: NavigatorBluetoothLike;
+  connection?: NavigatorConnectionLike;
+  deviceMemory?: number;
+  keyboard?: NavigatorKeyboardLike;
+};
+
 export async function collectNavigator(): Promise<SignalResult<NavigatorSignal> | null> {
   const start = performance.now();
   try {
     if (typeof navigator === "undefined") return null;
 
-    const nav = navigator as Navigator & Record<string, unknown>;
+    const nav = navigator as NavigatorWithExperimentalFields;
 
     let hardwareConcurrency = 0;
     try { hardwareConcurrency = nav.hardwareConcurrency ?? 0; } catch { /* ignore */ }
 
     let deviceMemory: number | null = null;
-    try { deviceMemory = (nav as Record<string, unknown>).deviceMemory as number ?? null; } catch { /* ignore */ }
+    try { deviceMemory = typeof nav.deviceMemory === "number" ? nav.deviceMemory : null; } catch { /* ignore */ }
 
     let maxTouchPoints = 0;
     try { maxTouchPoints = nav.maxTouchPoints ?? 0; } catch { /* ignore */ }
@@ -30,8 +49,8 @@ export async function collectNavigator(): Promise<SignalResult<NavigatorSignal> 
 
     let keyboardLayout: string | null = null;
     try {
-      const keyboard = (nav as Record<string, unknown>).keyboard as { getLayoutMap?: () => Promise<Map<string, string>> } | undefined;
-      if (keyboard?.getLayoutMap) {
+      const keyboard = nav.keyboard;
+      if (typeof keyboard?.getLayoutMap === "function") {
         const layoutMap = await keyboard.getLayoutMap();
         keyboardLayout = layoutMap instanceof Map ? layoutMap.get("KeyA") ?? null : null;
       }
@@ -39,8 +58,7 @@ export async function collectNavigator(): Promise<SignalResult<NavigatorSignal> 
 
     let connectionType: string | null = null;
     try {
-      const connection = (nav as Record<string, unknown>).connection as Record<string, unknown> | undefined;
-      connectionType = connection?.effectiveType as string ?? null;
+      connectionType = nav.connection?.effectiveType ?? null;
     } catch { /* ignore */ }
 
     const hasBluetooth = "bluetooth" in nav;
@@ -52,8 +70,8 @@ export async function collectNavigator(): Promise<SignalResult<NavigatorSignal> 
 
     let bluetoothAvailable: boolean | null = null;
     try {
-      const bluetooth = (nav as Record<string, unknown>).bluetooth as { getAvailability?: () => Promise<boolean> } | undefined;
-      if (bluetooth?.getAvailability) {
+      const bluetooth = nav.bluetooth;
+      if (typeof bluetooth?.getAvailability === "function") {
         bluetoothAvailable = await bluetooth.getAvailability();
       }
     } catch { /* ignore */ }

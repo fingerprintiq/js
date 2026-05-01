@@ -1,17 +1,11 @@
-import type { SignalResult } from "../types";
-
-export interface IncognitoSignal {
-  isPrivate: boolean;
-  method: string | null;
-}
+import type { IncognitoSignal, SignalResult } from "../types";
 
 export async function collectIncognito(): Promise<SignalResult<IncognitoSignal>> {
   const start = performance.now();
   let isPrivate = false;
   let method: string | null = null;
 
-  // Method 1: Storage quota estimation
-  // Incognito mode typically limits quota to ~120MB vs ~1GB+ in normal mode
+  // Chromium private profiles usually expose a much smaller storage quota.
   try {
     if (navigator.storage && navigator.storage.estimate) {
       const estimate = await navigator.storage.estimate();
@@ -22,7 +16,7 @@ export async function collectIncognito(): Promise<SignalResult<IncognitoSignal>>
     }
   } catch { /* ignore */ }
 
-  // Method 2: Firefox - indexedDB.databases() throws in private mode
+  // Firefox private mode rejects indexedDB.databases().
   if (!isPrivate) {
     try {
       const idb = globalThis.indexedDB as unknown as Record<string, unknown>;
@@ -35,14 +29,14 @@ export async function collectIncognito(): Promise<SignalResult<IncognitoSignal>>
     }
   }
 
-  // Method 3: Safari/legacy - webkitRequestFileSystem throws in incognito
+  // Safari private mode rejects webkitRequestFileSystem.
   if (!isPrivate) {
     try {
       const win = globalThis as unknown as Record<string, unknown>;
       if (typeof win.webkitRequestFileSystem === "function") {
         await new Promise<void>((resolve, reject) => {
           (win.webkitRequestFileSystem as Function)(
-            0, // TEMPORARY
+            0,
             1,
             () => resolve(),
             () => reject(new Error("filesystem_denied")),

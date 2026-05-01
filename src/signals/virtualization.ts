@@ -1,11 +1,4 @@
-import type { SignalResult } from "../types";
-
-export interface VirtualizationSignal {
-  vmDetected: boolean;
-  emulatorDetected: boolean;
-  indicators: string[];
-  confidence: "low" | "medium" | "high";
-}
+import type { SignalResult, VirtualizationSignal } from "../types";
 
 const VM_RENDERER_PATTERNS = [
   "swiftshader",
@@ -27,6 +20,18 @@ const EMULATOR_SCREEN_RESOLUTIONS = [
   [360, 640],
   [412, 915],
 ];
+
+interface BatteryStatusLike {
+  charging: boolean;
+  chargingTime: number;
+  dischargingTime: number;
+  level: number;
+}
+
+type NavigatorVirtualizationFields = Navigator & {
+  deviceMemory?: number;
+  getBattery?: () => Promise<BatteryStatusLike>;
+};
 
 export async function collectVirtualization(): Promise<SignalResult<VirtualizationSignal>> {
   const start = performance.now();
@@ -59,7 +64,7 @@ export async function collectVirtualization(): Promise<SignalResult<Virtualizati
   // 2. Low hardware specs: hardwareConcurrency === 1 AND deviceMemory <= 2
   try {
     const cores = navigator.hardwareConcurrency ?? 0;
-    const mem = (navigator as unknown as Record<string, unknown>).deviceMemory as number | undefined;
+    const mem = (navigator as NavigatorVirtualizationFields).deviceMemory;
     if (cores === 1 && typeof mem === "number" && mem <= 2) {
       vmIndicators.push("low_hw_specs");
     }
@@ -67,14 +72,9 @@ export async function collectVirtualization(): Promise<SignalResult<Virtualizati
 
   // 3. Battery always-plugged profile
   try {
-    const nav = navigator as unknown as Record<string, Function>;
+    const nav = navigator as NavigatorVirtualizationFields;
     if (typeof nav.getBattery === "function") {
-      const battery = await nav.getBattery() as {
-        charging: boolean;
-        level: number;
-        chargingTime: number;
-        dischargingTime: number;
-      };
+      const battery = await nav.getBattery();
       if (
         battery.charging === true &&
         battery.level === 1 &&
@@ -135,7 +135,7 @@ export async function collectVirtualization(): Promise<SignalResult<Virtualizati
     const isMobileUA = /android|iphone|ipad|ipod|mobile/.test(ua);
     if (isMobileUA) {
       const cores = navigator.hardwareConcurrency ?? 0;
-      const mem = (navigator as unknown as Record<string, unknown>).deviceMemory as number | undefined;
+      const mem = (navigator as NavigatorVirtualizationFields).deviceMemory;
       if (cores > 8 || (typeof mem === "number" && mem > 8)) {
         emulatorIndicators.push("mobile_ua_desktop_specs");
       }

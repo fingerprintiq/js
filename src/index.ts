@@ -41,8 +41,7 @@ export default class FingerprintIQ {
   private subscribeToWalletAddresses(): void {
     if (this.walletAutoLinkUnsub) return;
     this.walletAutoLinkUnsub = onWalletAddress((address) => {
-      // Only EVM-shaped addresses go to wallet-link for now; the backend
-      // enrichment pipeline is EVM-only.
+      // Wallet-link enrichment accepts EVM addresses only.
       if (!/^0x[a-f0-9]{40}$/.test(address)) return;
       this.walletLinkPending.add(address);
       this.scheduleWalletLink();
@@ -161,8 +160,8 @@ export default class FingerprintIQ {
         credentials: "include",
       });
       if (!response.ok) {
-        const errorBody = await response.text().catch(() => "Unknown error");
-        throw new Error(`FingerprintIQ API error (${response.status}): ${errorBody}`);
+        const errorBody = await response.text();
+        throw new Error(`FingerprintIQ API error (${response.status}): ${errorBody || response.statusText}`);
       }
       const result = (await response.json()) as IdentifyResponse;
       if (this.cache) this.writeCache(result);

@@ -1,10 +1,4 @@
-import type { SignalResult } from "../types";
-
-export interface IntegritySignal {
-  tamperedApis: string[];
-  workerMismatch: boolean;
-  lieScore: number;
-}
+import type { IntegritySignal, SignalResult } from "../types";
 
 const NATIVE_CODE_REGEX = /\[native code\]/;
 

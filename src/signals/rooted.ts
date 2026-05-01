@@ -1,10 +1,4 @@
-import type { SignalResult } from "../types";
-
-export interface RootedSignal {
-  detected: boolean;
-  confidence: "low" | "medium";
-  indicators: string[];
-}
+import type { RootedSignal, SignalResult } from "../types";
 
 const ROOT_FRAMEWORK_GLOBALS = [
   "__xposed",
